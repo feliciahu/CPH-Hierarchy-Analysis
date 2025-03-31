@@ -1,0 +1,26 @@
+SHOW TASKS LIKE 'SFDC_SR_MONTHLY_HIER%';
+DESC TASK SFDC_SR_MONTHLY_HIER;
+
+
+select *  from table(SBX_PSAS_DB.INFORMATION_SCHEMA.task_history(
+scheduled_time_range_start=>dateadd('day',-7,current_timestamp()),
+result_limit => 10,
+task_name=>'SFDC_SR_MONTHLY_HIER'));
+
+execute task SFDC_SR_MONTHLY_HIER;
+    
+alter task SFDC_SR_MONTHLY_HIER resume; --It was by default suspended  ( run this command Only first time since by default its suspended)
+
+
+--TASK
+CREATE OR REPLACE TASK SFDC_SR_MONTHLY_HIER
+ 
+WAREHOUSE = SBX_EA_GENERAL_FR_WH
+SCHEDULE = 'USING CRON 50 6 * * 1-5 America/Chicago' -- 6:50 AM on weekdays
+TIMESTAMP_INPUT_FORMAT = 'YYYY-MM-DD HH24'
+AS
+ 
+CREATE OR REPLACE TABLE SBX_PSAS_DB.SALES_OPS_GOV.TEST_HIER_TEMP as
+SELECT *,
+DATE_TRUNC(month, CURRENT_DATE()) AS YR_MTH
+FROM SBX_PSAS_DB.SALES_OPS_GOV.V_SFDC_CPH_HIERARCHY_CURR_TEST
